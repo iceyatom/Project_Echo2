@@ -1,0 +1,9 @@
+scikit-learn
+joblib
+pandas
+numpy
+xgboost
+lightgbm
+catboost
+fairlearn
+pyinstaller
