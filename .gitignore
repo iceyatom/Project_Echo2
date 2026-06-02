@@ -25,3 +25,5 @@ catboost_info/
 # Generated model and data files
 *.pkl
 *.parquet
+
+*.csv

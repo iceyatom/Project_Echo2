@@ -8,3 +8,4 @@ catboost
 fairlearn
 pyinstaller
 seaborn
+fastparquet
