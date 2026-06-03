@@ -27,3 +27,6 @@ catboost_info/
 *.parquet
 
 *.csv
+*.dat
+*.xml
+ML_Model_Building_Template.md
