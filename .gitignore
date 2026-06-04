@@ -19,6 +19,9 @@ Thumbs.db
 # Claude Code
 .claude/
 
+# Secrets — Census API key (never commit)
+census_api_key.txt
+
 # CatBoost training logs (auto-generated during training)
 catboost_info/
 
