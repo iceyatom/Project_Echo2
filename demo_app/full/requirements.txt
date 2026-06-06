@@ -1,0 +1,13 @@
+# Project Echo - Income Predictor (Full exp4 ensemble) - inference dependencies
+# Python 3.9 - 3.13 (this project was built/tested on 3.13).
+# IMPORTANT: use the SAME scikit-learn / xgboost / lightgbm / catboost versions the
+# model was trained with, or the 6.7 GB pickle may fail to load.
+scikit-learn
+joblib
+pandas
+numpy
+xgboost
+lightgbm
+catboost
+pyinstaller
+# tkinter ships with Python (not a pip package).
