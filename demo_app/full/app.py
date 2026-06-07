@@ -74,8 +74,16 @@ if not hasattr(_main_module, "StackedGBM"):
 def _resolve_model(filenames):
     dirs = []
     if getattr(sys, "frozen", False):
-        dirs.append(os.path.dirname(sys.executable))     # beside the .exe  <-- primary
+        exe_dir = os.path.dirname(sys.executable)
+        dirs.append(exe_dir)                             # beside the .exe  <-- primary (distribution layout)
         dirs.append(sys._MEIPASS)                        # type: ignore[attr-defined]
+        # Dev fallback: the 6 GB pkl usually lives at the project root, NOT inside the
+        # onedir folder -- PyInstaller wipes that folder on every rebuild. Walk up so a
+        # frozen exe run from .../demo_app/full/dist/<app>/ still finds a root-level model.
+        d = exe_dir
+        for _ in range(5):
+            d = os.path.dirname(d)
+            dirs.append(d)
     else:
         here = os.path.dirname(os.path.abspath(__file__))
         dirs += [here, os.path.join(here, "..", "..")]   # beside app.py, then repo root
@@ -1017,6 +1025,22 @@ def _options_to_display(labels: dict, codes):
     return display, code_list
 
 
+def _attach_autowidth_popdown(combo, cap=80):
+    """Widen a combobox's drop-down list to fit its longest value, so long OCCP/INDP
+    titles aren't clipped. The entry box keeps its compact size; only the popup grows."""
+    def _post():
+        values = combo.cget("values")
+        if not values:
+            return
+        longest = max(len(str(v)) for v in values)
+        try:
+            popdown = combo.tk.call("ttk::combobox::PopdownWindow", combo)
+            combo.tk.call(f"{popdown}.f.l", "configure", "-width", min(longest + 1, cap))
+        except tk.TclError:
+            pass
+    combo.configure(postcommand=_post)
+
+
 # =============================================================================
 # Application
 # =============================================================================
@@ -1026,7 +1050,7 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Project Echo - Income Predictor (Full exp4 ensemble)")
-        self.resizable(False, False)
+        self.resizable(True, True)
         self.bundle = None
         self.widgets = {}
         self._load_model()
@@ -1053,6 +1077,7 @@ class App(tk.Tk):
     def _build_ui(self):
         header = tk.Frame(self, bg="#3a1f5f")
         header.grid(row=0, column=0, sticky="ew")
+        self.columnconfigure(0, weight=1)            # let the rows stretch when the window is widened
         tk.Label(header, text="Project Echo  -  Socio-Economic Income Predictor",
                  bg="#3a1f5f", fg="white",
                  font=("Segoe UI", 15, "bold")).pack(anchor="w", padx=16, pady=(10, 2))
@@ -1063,6 +1088,8 @@ class App(tk.Tk):
         form = tk.LabelFrame(self, text="  Person attributes  ", font=("Segoe UI", 10, "bold"),
                              padx=10, pady=8)
         form.grid(row=1, column=0, sticky="ew", padx=12, pady=10)
+        form.columnconfigure(1, weight=1)            # the two widget columns grow on resize
+        form.columnconfigure(4, weight=1)
         ordered = (list(CONTINUOUS_FIELDS) + list(LOWCARD_FIELDS) + list(HIGHCARD_FIELDS))
         half = (len(ordered) + 1) // 2
         for idx, field in enumerate(ordered):
@@ -1115,6 +1142,8 @@ class App(tk.Tk):
 
         tk.Label(parent, text=label, anchor="w").grid(row=row, column=col, sticky="w", **self.PAD)
         w.grid(row=row, column=col + 1, sticky="ew", **self.PAD)
+        if isinstance(w, ttk.Combobox):
+            _attach_autowidth_popdown(w)
 
     def _valid_codes(self, field):
         if self.bundle is not None:

@@ -1044,6 +1044,22 @@ def _options_to_display(labels: dict, codes):
     return display, code_list
 
 
+def _attach_autowidth_popdown(combo, cap=80):
+    """Widen a combobox's drop-down list to fit its longest value, so long OCCP/INDP
+    titles aren't clipped. The entry box keeps its compact size; only the popup grows."""
+    def _post():
+        values = combo.cget("values")
+        if not values:
+            return
+        longest = max(len(str(v)) for v in values)
+        try:
+            popdown = combo.tk.call("ttk::combobox::PopdownWindow", combo)
+            combo.tk.call(f"{popdown}.f.l", "configure", "-width", min(longest + 1, cap))
+        except tk.TclError:
+            pass
+    combo.configure(postcommand=_post)
+
+
 # =============================================================================
 # Application
 # =============================================================================
@@ -1053,7 +1069,7 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Project Echo - Income Predictor (Lite)")
-        self.resizable(False, False)
+        self.resizable(True, True)
         self.bundle = None
         self.widgets = {}      # field -> (widget, code_list or None)
         self._load_model()
@@ -1081,6 +1097,7 @@ class App(tk.Tk):
         # Header banner
         header = tk.Frame(self, bg="#1f3a5f")
         header.grid(row=0, column=0, sticky="ew")
+        self.columnconfigure(0, weight=1)            # let the rows stretch when the window is widened
         tk.Label(header, text="Project Echo  -  Socio-Economic Income Predictor",
                  bg="#1f3a5f", fg="white",
                  font=("Segoe UI", 15, "bold")).pack(anchor="w", padx=16, pady=(10, 2))
@@ -1092,6 +1109,8 @@ class App(tk.Tk):
         form = tk.LabelFrame(self, text="  Person attributes  ", font=("Segoe UI", 10, "bold"),
                              padx=10, pady=8)
         form.grid(row=1, column=0, sticky="ew", padx=12, pady=10)
+        form.columnconfigure(1, weight=1)            # the two widget columns grow on resize
+        form.columnconfigure(4, weight=1)
 
         # Assemble the field order: continuous, then low-card, then high-card.
         ordered = (list(CONTINUOUS_FIELDS) + list(LOWCARD_FIELDS) + list(HIGHCARD_FIELDS))
@@ -1147,6 +1166,8 @@ class App(tk.Tk):
 
         tk.Label(parent, text=label, anchor="w").grid(row=row, column=col, sticky="w", **self.PAD)
         w.grid(row=row, column=col + 1, sticky="ew", **self.PAD)
+        if isinstance(w, ttk.Combobox):
+            _attach_autowidth_popdown(w)
 
     def _valid_codes(self, field):
         """Valid codes for a high-card field, taken from the model's own maps."""
