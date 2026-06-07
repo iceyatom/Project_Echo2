@@ -1,0 +1,12 @@
+# Project Echo - Income Predictor (Lite) - inference dependencies
+# Python 3.9 - 3.13 (this project was built/tested on 3.13).
+scikit-learn
+joblib
+pandas
+numpy
+xgboost
+lightgbm
+catboost
+pyinstaller
+# tkinter is NOT a pip package - it ships with the Python installer
+# (tick "tcl/tk and IDLE" on Windows; `sudo apt-get install python3-tk` on Debian/Ubuntu).

@@ -9,3 +9,5 @@ fairlearn
 pyinstaller
 seaborn
 fastparquet
+requests
+pyarrow

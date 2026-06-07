@@ -16,8 +16,8 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# Claude Code
-.claude/
+# Secrets — Census API key (never commit)
+census_api_key.txt
 
 # CatBoost training logs (auto-generated during training)
 catboost_info/
@@ -26,7 +26,7 @@ catboost_info/
 *.pkl
 *.parquet
 
+#Dataset type files
 *.csv
 *.dat
 *.xml
-ML_Model_Building_Template.md
