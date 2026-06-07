@@ -4,10 +4,12 @@ Project Echo - Income Predictor (Lite / 3-booster blend)
 Interactive tkinter demo over the ACS 2024 PUMS income model (Experiment 4).
 
 This LITE app bundles the three gradient-boosted base learners from the exp4
-ensemble -- XGBoost + LightGBM + CatBoost -- and averages them. It is a faithful,
-lightweight stand-in for the full 6.7 GB stacking ensemble: the boosters each
-score Test R2 ~0.51 and their blend ~0.5125, statistically identical to the full
-Stacking(GBMs) model (0.5154), because the wage signal is feature-bound.
+ensemble -- XGBoost + LightGBM + CatBoost -- and combines them with a TUNED
+STACKED ENSEMBLE (a Ridge meta-learner over the three boosters; it falls back to a
+plain log-space average for older bundles that lack the meta). It is a faithful,
+lightweight stand-in for the full 6.7 GB stacking ensemble: the tuned 3-booster
+stack scores Test R2 ~0.514, statistically identical to the full Stacking(GBMs)
+model (0.5154), because the wage signal is feature-bound.
 
 Model bundle (model.pkl) is loaded via joblib. Target was trained on log1p(WAGP)
 where WAGP is in millions of constant dollars, so predictions are inverted with
@@ -1101,7 +1103,7 @@ class App(tk.Tk):
         tk.Label(header, text="Project Echo  -  Socio-Economic Income Predictor",
                  bg="#1f3a5f", fg="white",
                  font=("Segoe UI", 15, "bold")).pack(anchor="w", padx=16, pady=(10, 2))
-        tk.Label(header, text="2024 ACS PUMS  -  XGBoost + LightGBM + CatBoost blend (Experiment 4)",
+        tk.Label(header, text="2024 ACS PUMS  -  XGBoost + LightGBM + CatBoost tuned stacked ensemble (Experiment 4 Lite)",
                  bg="#1f3a5f", fg="#bcd2ee",
                  font=("Segoe UI", 9)).pack(anchor="w", padx=16, pady=(0, 10))
 
@@ -1205,6 +1207,18 @@ class App(tk.Tk):
                 raise ValueError(f"'{label}' must be a numeric ACS code.")
         return raw
 
+    # ---- ensemble combiner --------------------------------------------------
+    def _blend(self, log_preds):
+        """Combine the three boosters in log space. Uses the tuned stacked ensemble
+        (the bundle's Ridge meta-learner over blend_order) when present, else a plain
+        log-space average. Returns (blended_log_prediction, human-readable description)."""
+        meta = self.bundle.get("stack_meta")
+        order = self.bundle.get("blend_order")
+        if meta is not None and order:
+            stacked = np.column_stack([[log_preds[n]] for n in order])
+            return float(meta.predict(stacked)[0]), "tuned 3-booster stacked ensemble"
+        return float(np.mean(list(log_preds.values()))), "3-booster average blend"
+
     # ---- prediction ---------------------------------------------------------
     def _predict(self):
         if self.bundle is None:
@@ -1226,7 +1240,8 @@ class App(tk.Tk):
                 "CatBoost": float(models["CatBoost"].predict(X)[0]),
             }
             dollars = {n: float(np.expm1(lp) * scale) for n, lp in log_preds.items()}
-            blend = float(np.expm1(np.mean(list(log_preds.values()))) * scale)
+            blend_log, blend_desc = self._blend(log_preds)
+            blend = float(np.expm1(blend_log) * scale)
         except ValueError as ve:
             messagebox.showerror("Invalid input", str(ve))
             return
@@ -1240,7 +1255,7 @@ class App(tk.Tk):
         breakdown = "   ".join(f"{n} ${v/1000:,.1f}k" for n, v in dollars.items())
         self.detail_var.set(
             f"{band}\nPer-model:  {breakdown}\n"
-            f"(3-booster blend of exp4; predicted annual wage/salary income, WAGP)")
+            f"({blend_desc} of exp4; predicted annual wage/salary income, WAGP)")
 
     @staticmethod
     def _band(amount):
