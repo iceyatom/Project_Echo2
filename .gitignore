@@ -23,7 +23,7 @@ census_api_key.txt
 catboost_info/
 
 # Generated model and data files
-*.pkl
+acs2024v1.1_income_models_exp4.pkl
 *.parquet
 
 #Dataset type files
