@@ -22,8 +22,13 @@ census_api_key.txt
 # CatBoost training logs (auto-generated during training)
 catboost_info/
 
+#Lite demo app files
+!demo_app/lite/dist/
+*.pkl
+!demo_app/lite/dist/model.pkl
+demo_app/lite/dist/*.exe
+
 # Generated model and data files
-acs2024v1.1_income_models_exp4.pkl
 *.parquet
 
 #Dataset type files
